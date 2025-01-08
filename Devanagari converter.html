@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Number to Devanagari Converter</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f8f9fa;
         }
         .converter-container {
-            max-width: 500px;
+            max-width: 600px;
             margin: 50px auto;
             padding: 20px;
             background: white;
@@ -27,15 +26,14 @@
     </style>
 </head>
 <body>
-
 <div class="container converter-container">
-    <h2 class="text-center">Number to Devanagari Converter</h2>
-    <p class="text-center text-muted">Convert English numbers into Devanagari numerals and Nepali words.</p>
+    <h2 class="text-center">Number Converter</h2>
+    <p class="text-center text-muted">Convert numbers to Devanagari numerals, Nepali words, English words, and ordinal forms.</p>
 
     <form id="converter-form">
         <div class="mb-3">
             <label for="numberInput" class="form-label">Enter a Number</label>
-            <input type="number" id="numberInput" class="form-control" placeholder="e.g., 123" required>
+            <input type="text" id="numberInput" class="form-control" placeholder="e.g., 123.45" required>
         </div>
         <button type="submit" class="btn btn-primary w-100">Convert</button>
     </form>
@@ -44,32 +42,32 @@
         <h5>Results:</h5>
         <p><strong>Devanagari Numeral:</strong> <span id="devanagariOutput"></span></p>
         <p><strong>Nepali Word:</strong> <span id="nepaliWordOutput"></span></p>
+        <p><strong>English Word:</strong> <span id="englishWordOutput"></span></p>
+        <p><strong>Ordinal Form:</strong> <span id="ordinalOutput"></span></p>
+        <button class="btn btn-secondary btn-sm mt-2" id="copyResults">Copy Results</button>
     </div>
 </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Mapping for Devanagari digits
-    const devanagariDigits = {
-        '0': '०', '1': '१', '2': '२', '3': '३',
-        '4': '४', '5': '५', '6': '६', '7': '७',
-        '8': '८', '9': '९'
-    };
+    // Devanagari digits mapping
+    const devanagariDigits = {'0': '०', '1': '१', '2': '२', '3': '३', '4': '४', '5': '५', '6': '६', '7': '७', '8': '८', '9': '९'};
 
-    // Mapping for Nepali words
+    // Nepali words mapping
     const nepaliWords = {
-        0: "शून्य", 1: "एक", 2: "दुई", 3: "तीन", 4: "चार",
-        5: "पाँच", 6: "छ", 7: "सात", 8: "आठ", 9: "नौ",
-        10: "दश", 20: "बीस", 30: "तीस", 40: "चालिस", 50: "पचास",
-        60: "साठी", 70: "सत्तरी", 80: "असी", 90: "नब्बे",
+        0: "शून्य", 1: "एक", 2: "दुई", 3: "तीन", 4: "चार", 5: "पाँच", 6: "छ", 7: "सात", 8: "आठ", 9: "नौ",
+        10: "दश", 20: "बीस", 30: "तीस", 40: "चालिस", 50: "पचास", 60: "साठी", 70: "सत्तरी", 80: "असी", 90: "नब्बे",
         100: "सय", 1000: "हजार", 100000: "लाख", 10000000: "करोड"
     };
 
-    // Convert number to Nepali words
-    function convertToNepaliWords(num) {
-        if (num === 0) return nepaliWords[0];
+    // Convert number to Devanagari
+    function numberToDevanagari(num) {
+        return num.toString().split('').map(digit => devanagariDigits[digit] || digit).join('');
+    }
 
+    // Convert number to Nepali words
+    function numberToNepaliWords(num) {
+        if (num === 0) return nepaliWords[0];
         let result = "";
         const units = [10000000, 100000, 1000, 100, 10, 1];
         const unitWords = ["करोड", "लाख", "हजार", "सय", "", ""];
@@ -77,10 +75,9 @@
         for (let i = 0; i < units.length; i++) {
             const unitValue = units[i];
             const count = Math.floor(num / unitValue);
-
             if (count > 0) {
-                if (unitValue >= 100) {
-                    result += convertToNepaliWords(count) + " " + unitWords[i] + " ";
+                if (unitValue >= 100 || (unitValue === 10 && count < 2)) {
+                    result += numberToNepaliWords(count) + " " + unitWords[i] + " ";
                 } else {
                     result += nepaliWords[count * unitValue] + " ";
                 }
@@ -91,29 +88,51 @@
         return result.trim();
     }
 
-    // Convert number to Devanagari and Nepali words
-    function numberToDevanagari(num) {
-        // Convert to Devanagari numerals
-        const devanagari = num.toString().split('').map(digit => devanagariDigits[digit]).join('');
+    // Convert number to English words
+    function numberToEnglishWords(num) {
+        const toWords = require('number-to-words');
+        return toWords.toWords(num);
+    }
 
-        // Convert to Nepali words
-        const nepaliWord = convertToNepaliWords(num);
-
-        return { devanagari, nepaliWord };
+    // Get ordinal form
+    function getOrdinalForm(num) {
+        const toOrdinal = require('number-to-words');
+        return toOrdinal.toOrdinal(num);
     }
 
     // Handle form submission
     document.getElementById('converter-form').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const numberInput = document.getElementById('numberInput').value;
-        if (numberInput === "") return;
+        const input = document.getElementById('numberInput').value;
+        if (input === "") return;
 
-        const { devanagari, nepaliWord } = numberToDevanagari(Number(numberInput));
+        const num = parseFloat(input);
+        const integerPart = Math.floor(num);
+        const decimalPart = Math.round((num - integerPart) * 100);
+
+        const devanagari = numberToDevanagari(input);
+        const nepaliWord = numberToNepaliWords(integerPart) + (decimalPart > 0 ? ` दशमलव ${numberToNepaliWords(decimalPart)}` : "");
+        const englishWord = numberToEnglishWords(input);
+        const ordinal = getOrdinalForm(integerPart);
 
         document.getElementById('devanagariOutput').textContent = devanagari;
         document.getElementById('nepaliWordOutput').textContent = nepaliWord;
+        document.getElementById('englishWordOutput').textContent = englishWord;
+        document.getElementById('ordinalOutput').textContent = ordinal;
         document.getElementById('result').classList.remove('d-none');
+    });
+
+    // Copy results
+    document.getElementById('copyResults').addEventListener('click', function () {
+        const resultText = `Devanagari Numeral: ${document.getElementById('devanagariOutput').textContent}\n`
+            + `Nepali Word: ${document.getElementById('nepaliWordOutput').textContent}\n`
+            + `English Word: ${document.getElementById('englishWordOutput').textContent}\n`
+            + `Ordinal Form: ${document.getElementById('ordinalOutput').textContent}`;
+
+        navigator.clipboard.writeText(resultText).then(() => {
+            alert('Results copied to clipboard!');
+        });
     });
 </script>
 </body>
